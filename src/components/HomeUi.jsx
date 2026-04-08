@@ -34,7 +34,7 @@ function formatRelativeDate(date) {
     return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
-export default function ExpenseTracker() {
+export default function ExpenseTracker({onLogout}) {
     const [expenses, setExpenses] = useState(SAMPLE_EXPENSES);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState({ title: "", amount: "", category: "Food" });
@@ -83,8 +83,20 @@ export default function ExpenseTracker() {
         setDeleteId(null);
     };
 
+    const logout = () => {
+        console.log("LOGOUT");
+        localStorage.removeItem("access")
+        localStorage.removeItem("refresh")
+        onLogout()
+    }
+
     return (
         <div className="min-h-screen bg-[#f5f0eb] font-sans" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
+            <button 
+                className="bg-[#c9a96e] hover:bg-[#b8935a] active:scale-95 transition-all duration-200 text-white font-semibold rounded-xl float-end p-2 m-2" 
+                style={{ fontFamily: "monospace", letterSpacing: "0.05em" }}
+                type="button"
+                onClick={logout}>Logout</button>
             {/* Background texture */}
             <div className="fixed inset-0 pointer-events-none opacity-30"
                 style={{ backgroundImage: "radial-gradient(circle at 20% 20%, #e8d5c4 0%, transparent 50%), radial-gradient(circle at 80% 80%, #d4c5b8 0%, transparent 50%)" }} />
@@ -225,8 +237,8 @@ export default function ExpenseTracker() {
                                         key={cat.label}
                                         onClick={() => setForm((f) => ({ ...f, category: cat.label }))}
                                         className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border-2 text-xs font-mono transition-all duration-150 ${form.category === cat.label
-                                                ? "border-[#c9a96e] bg-[#fdf6ec] text-[#b8935a]"
-                                                : "border-stone-100 bg-stone-50 text-stone-500 hover:border-stone-200"
+                                            ? "border-[#c9a96e] bg-[#fdf6ec] text-[#b8935a]"
+                                            : "border-stone-100 bg-stone-50 text-stone-500 hover:border-stone-200"
                                             }`}
                                     >
                                         <span className="text-base">{cat.icon}</span>
