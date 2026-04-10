@@ -1,24 +1,17 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import API from "../api/axios";
 
 const CATEGORIES = [
-    { label: "Food", icon: "🍜", color: "bg-orange-100 text-orange-600" },
-    { label: "Transport", icon: "🚗", color: "bg-blue-100 text-blue-600" },
-    { label: "Shopping", icon: "🛍️", color: "bg-pink-100 text-pink-600" },
-    { label: "Health", icon: "💊", color: "bg-green-100 text-green-600" },
-    { label: "Bills", icon: "📄", color: "bg-yellow-100 text-yellow-700" },
-    { label: "Other", icon: "✦", color: "bg-purple-100 text-purple-600" },
+    { value:"FOOD" ,label: "Food", icon: "🍜", color: "bg-orange-100 text-orange-600" },
+    { value:"TRAVEL" ,label: "Transport", icon: "🚗", color: "bg-blue-100 text-blue-600" },
+    { value:"SHOPPING" ,label: "Shopping", icon: "🛍️", color: "bg-pink-100 text-pink-600" },
+    { value:"HEALTH" ,label: "Health", icon: "💊", color: "bg-green-100 text-green-600" },
+    { value:"BILLS" ,label: "Bills", icon: "📄", color: "bg-yellow-100 text-yellow-700" },
+    { value:"OTHER" ,label: "Other", icon: "✦", color: "bg-purple-100 text-purple-600" },
 ];
 
-const SAMPLE_EXPENSES = [
-    { id: 1, title: "Grocery Run", amount: 1240, category: "Food", date: new Date(new Date().setDate(new Date().getDate() - 1)) },
-    { id: 2, title: "Auto Rickshaw", amount: 85, category: "Transport", date: new Date(new Date().setDate(new Date().getDate() - 1)) },
-    { id: 3, title: "Electricity Bill", amount: 980, category: "Bills", date: new Date(new Date().setDate(new Date().getDate() - 3)) },
-    { id: 4, title: "New Shirt", amount: 649, category: "Shopping", date: new Date(new Date().setDate(new Date().getDate() - 4)) },
-    { id: 5, title: "Doctor Visit", amount: 500, category: "Health", date: new Date(new Date().setDate(new Date().getDate() - 5)) },
-];
-
-function getCategoryMeta(label) {
-    return CATEGORIES.find((c) => c.label === label) || CATEGORIES[5];
+function getCategoryMeta(value) {
+    return CATEGORIES.find((c) => c.value === value) || CATEGORIES[5];
 }
 
 function formatCurrency(amount) {
@@ -35,9 +28,17 @@ function formatRelativeDate(date) {
 }
 
 export default function ExpenseTracker({onLogout}) {
-    const [expenses, setExpenses] = useState(SAMPLE_EXPENSES);
+    useEffect(()=>{
+        listExpenses()
+    }, [])
+
+
+    const expenseListApi = () => API.get("api/expense/list/")
+    const expenseAddApi = (data) => API.post("api/expense/create/", data)
+
+    const [expenses, setExpenses] = useState([]);
     const [showModal, setShowModal] = useState(false);
-    const [form, setForm] = useState({ title: "", amount: "", category: "Food" });
+    const [form, setForm] = useState({ note: "", amount: "", category: "FOOD" });
     const [formError, setFormError] = useState("");
     const [deleteId, setDeleteId] = useState(null);
 
@@ -50,7 +51,7 @@ export default function ExpenseTracker({onLogout}) {
     const monthTotal = useMemo(() =>
         expenses
             .filter((e) => {
-                const d = new Date(e.date);
+                const d = new Date(e.created_date);
                 return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
             })
             .reduce((sum, e) => sum + e.amount, 0),
@@ -62,18 +63,21 @@ export default function ExpenseTracker({onLogout}) {
         [expenses]
     );
 
-    const handleAdd = () => {
-        if (!form.title.trim()) { setFormError("Please enter a title."); return; }
+    const listExpenses = async () => {
+        const res = await expenseListApi()
+        setExpenses(res.data)
+    }
+
+    const handleAdd = async () => {
+        if (!form.note.trim()) { setFormError("Please enter a note."); return; }
         if (!form.amount || isNaN(form.amount) || Number(form.amount) <= 0) { setFormError("Enter a valid amount."); return; }
-        const newExp = {
-            id: Date.now(),
-            title: form.title.trim(),
-            amount: Math.round(Number(form.amount)),
-            category: form.category,
-            date: new Date(),
-        };
-        setExpenses((prev) => [newExp, ...prev]);
-        setForm({ title: "", amount: "", category: "Food" });
+        const res = await expenseAddApi({
+            'amount': form.amount,
+            'note': form.note,
+            'category': form.category,
+        })
+        listExpenses()
+        setForm({ note: "", amount: "", category: "FOOD" });
         setFormError("");
         setShowModal(false);
     };
@@ -84,7 +88,6 @@ export default function ExpenseTracker({onLogout}) {
     };
 
     const logout = () => {
-        console.log("LOGOUT");
         localStorage.removeItem("access")
         localStorage.removeItem("refresh")
         onLogout()
@@ -165,10 +168,10 @@ export default function ExpenseTracker({onLogout}) {
                                     {/* Info */}
                                     <div className="flex-1 min-w-0">
                                         <p className="font-semibold text-stone-800 truncate text-sm" style={{ fontFamily: "'Georgia', serif" }}>
-                                            {exp.title}
+                                            {exp.note}
                                         </p>
                                         <p className="text-xs text-stone-400 font-mono mt-0.5">
-                                            {cat.label} · {formatRelativeDate(exp.date)}
+                                            {cat.label} · {formatRelativeDate(exp.created_date)}
                                         </p>
                                     </div>
 
@@ -204,14 +207,14 @@ export default function ExpenseTracker({onLogout}) {
                             </button>
                         </div>
 
-                        {/* Title */}
+                        {/* Note */}
                         <div className="mb-4">
-                            <label className="block text-xs font-mono text-stone-500 uppercase tracking-widest mb-1.5">Title</label>
+                            <label className="block text-xs font-mono text-stone-500 uppercase tracking-widest mb-1.5">Note</label>
                             <input
                                 type="text"
                                 placeholder="What did you spend on?"
-                                value={form.title}
-                                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                                value={form.note}
+                                onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
                                 className="w-full border border-stone-200 rounded-xl px-4 py-3 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#c9a96e] focus:border-transparent placeholder:text-stone-300"
                             />
                         </div>
@@ -234,9 +237,9 @@ export default function ExpenseTracker({onLogout}) {
                             <div className="grid grid-cols-3 gap-2">
                                 {CATEGORIES.map((cat) => (
                                     <button
-                                        key={cat.label}
-                                        onClick={() => setForm((f) => ({ ...f, category: cat.label }))}
-                                        className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border-2 text-xs font-mono transition-all duration-150 ${form.category === cat.label
+                                        key={cat.value}
+                                        onClick={() => setForm((f) => ({ ...f, category: cat.value }))}
+                                        className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border-2 text-xs font-mono transition-all duration-150 ${form.category === cat.value
                                             ? "border-[#c9a96e] bg-[#fdf6ec] text-[#b8935a]"
                                             : "border-stone-100 bg-stone-50 text-stone-500 hover:border-stone-200"
                                             }`}
