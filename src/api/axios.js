@@ -15,4 +15,27 @@ API.interceptors.request.use((req)=>{
     return req
 })
 
+// refresh token
+API.interceptors.response.use(
+    (response)=>response,
+    async (error) => {
+        const orginalRequest = error.config
+
+        if (error.response?.status == 401){
+            const refresh = localStorage.getItem("refresh");
+            const res = await axios.post(
+                "http://127.0.0.1:8000/api/token/refresh/", {refresh:refresh}
+            )
+            const newToken = res.data.access;
+            localStorage.setItem("access", newToken)
+            API.defaults.headers.Authorization = `Bearer ${newToken}`
+            orginalRequest.headers.Authorization = `Bearer ${newToken}`
+            return API(orginalRequest)
+        }
+
+        return Promise.reject(error)
+    }
+)
+
+
 export default API;

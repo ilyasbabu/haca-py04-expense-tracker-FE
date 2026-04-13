@@ -51,7 +51,7 @@ export default function ExpenseTracker({onLogout}) {
 
     const monthTotal = useMemo(() =>
         expenses
-            .filter((e) => {
+            ?.filter((e) => {
                 const d = new Date(e.created_date);
                 return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
             })
@@ -60,13 +60,13 @@ export default function ExpenseTracker({onLogout}) {
     );
 
     const recent = useMemo(() =>
-        [...expenses].sort((a, b) => new Date(b.date) - new Date(a.date)),
+        expenses ? [...expenses].sort((a, b) => new Date(b.date) - new Date(a.date)) : [],
         [expenses]
     );
 
     const listExpenses = async () => {
         const res = await expenseListApi()
-        setExpenses(res.data)
+        setExpenses(res?.data)
     }
 
     const handleAdd = async () => {
@@ -130,7 +130,7 @@ export default function ExpenseTracker({onLogout}) {
                         {formatCurrency(monthTotal)}
                     </h1>
                     <div className="mt-4 h-px bg-gradient-to-r from-transparent via-stone-600 to-transparent" />
-                    <p className="text-stone-500 text-xs mt-3 font-mono">{expenses.length} transactions total</p>
+                    <p className="text-stone-500 text-xs mt-3 font-mono">{expenses?.length} transactions total</p>
                 </div>
 
                 {/* Add Button */}
