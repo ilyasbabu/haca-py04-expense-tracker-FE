@@ -35,6 +35,7 @@ export default function ExpenseTracker({onLogout}) {
 
     const expenseListApi = () => API.get("api/expense/list/")
     const expenseAddApi = (data) => API.post("api/expense/create/", data)
+    const expenseDeleteApi = (data) => API.post("api/expense/delete/", data)
 
     const [expenses, setExpenses] = useState([]);
     const [showModal, setShowModal] = useState(false);
@@ -82,9 +83,10 @@ export default function ExpenseTracker({onLogout}) {
         setShowModal(false);
     };
 
-    const handleDelete = (id) => {
-        setExpenses((prev) => prev.filter((e) => e.id !== id));
+    const handleDelete = async (id) => {
+        await expenseDeleteApi({id:id})
         setDeleteId(null);
+        listExpenses()
     };
 
     const logout = () => {
