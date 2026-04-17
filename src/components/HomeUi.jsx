@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import API from "../api/axios";
+import Markdown from 'react-markdown';
 
 const CATEGORIES = [
-    { value:"FOOD" ,label: "Food", icon: "🍜", color: "bg-orange-100 text-orange-600" },
-    { value:"TRAVEL" ,label: "Transport", icon: "🚗", color: "bg-blue-100 text-blue-600" },
-    { value:"SHOPPING" ,label: "Shopping", icon: "🛍️", color: "bg-pink-100 text-pink-600" },
-    { value:"HEALTH" ,label: "Health", icon: "💊", color: "bg-green-100 text-green-600" },
-    { value:"BILLS" ,label: "Bills", icon: "📄", color: "bg-yellow-100 text-yellow-700" },
-    { value:"OTHER" ,label: "Other", icon: "✦", color: "bg-purple-100 text-purple-600" },
+    { value: "FOOD", label: "Food", icon: "🍜", color: "bg-orange-100 text-orange-600" },
+    { value: "TRAVEL", label: "Transport", icon: "🚗", color: "bg-blue-100 text-blue-600" },
+    { value: "SHOPPING", label: "Shopping", icon: "🛍️", color: "bg-pink-100 text-pink-600" },
+    { value: "HEALTH", label: "Health", icon: "💊", color: "bg-green-100 text-green-600" },
+    { value: "BILLS", label: "Bills", icon: "📄", color: "bg-yellow-100 text-yellow-700" },
+    { value: "OTHER", label: "Other", icon: "✦", color: "bg-purple-100 text-purple-600" },
 ];
 
 function getCategoryMeta(value) {
@@ -27,8 +28,8 @@ function formatRelativeDate(date) {
     return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
-export default function ExpenseTracker({onLogout}) {
-    useEffect(()=>{
+export default function ExpenseTracker({ onLogout }) {
+    useEffect(() => {
         listExpenses()
         userDetailetch()
     }, [])
@@ -38,13 +39,16 @@ export default function ExpenseTracker({onLogout}) {
     const expenseAddApi = (data) => API.post("api/expense/create/", data)
     const expenseDeleteApi = (data) => API.post("api/expense/delete/", data)
     const userDetailApi = () => API.get("api/user-details/")
+    const aiOverviewApi = () => API.get("api/expense/ai-overview/")
 
     const [expenses, setExpenses] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [showAIModal, setShowAIModal] = useState(false);
     const [form, setForm] = useState({ note: "", amount: "", category: "FOOD" });
     const [formError, setFormError] = useState("");
     const [deleteId, setDeleteId] = useState(null);
     const [user, setUser] = useState(null);
+    const [aiOverView, setAiOverView] = useState("Loading AI Overview.....");
 
     const today = new Date();
     const todayStr = today.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -92,7 +96,7 @@ export default function ExpenseTracker({onLogout}) {
     };
 
     const handleDelete = async (id) => {
-        await expenseDeleteApi({id:id})
+        await expenseDeleteApi({ id: id })
         setDeleteId(null);
         listExpenses()
     };
@@ -103,10 +107,16 @@ export default function ExpenseTracker({onLogout}) {
         onLogout()
     }
 
+    const showAiOverview = async () => {
+        setShowAIModal(true)
+        const res = await aiOverviewApi()
+        setAiOverView(res.data)
+    }
+
     return (
         <div className="min-h-screen bg-[#f5f0eb] font-sans" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
-            <button 
-                className="bg-[#c9a96e] hover:bg-[#b8935a] active:scale-95 transition-all duration-200 text-white font-semibold rounded-xl float-end p-2 m-2" 
+            <button
+                className="bg-[#c9a96e] hover:bg-[#b8935a] active:scale-95 transition-all duration-200 text-white font-semibold rounded-xl float-end p-2 m-2"
                 style={{ fontFamily: "monospace", letterSpacing: "0.05em" }}
                 type="button"
                 onClick={logout}>Logout</button>
@@ -205,8 +215,16 @@ export default function ExpenseTracker({onLogout}) {
                             );
                         })}
                     </ul>
+
                 </div>
             </div>
+
+            <button
+                className="bg-[#c9a96e] hover:bg-[#b8935a] active:scale-95 transition-all duration-200 text-white font-semibold rounded-xl float-end p-4 m-4 fixed right-0 bottom-0"
+                style={{ fontFamily: "monospace", letterSpacing: "0.05em" }}
+                type="button"
+                onClick={showAiOverview}
+            >AI Overview</button>
 
             {/* Add Expense Modal */}
             {showModal && (
@@ -295,6 +313,35 @@ export default function ExpenseTracker({onLogout}) {
                                 Delete
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {showAIModal && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setShowModal(false); setFormError(""); }} />
+                    <div className="relative bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl z-10">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-stone-800" style={{ fontFamily: "'Georgia', serif" }}>AI Overview</h3>
+                            <button onClick={() => { setShowAIModal(false) }}
+                                className="text-stone-400 hover:text-stone-700 text-2xl leading-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors">
+                                ×
+                            </button>
+                        </div>
+
+                        {/* Note */}
+                        <div className="mb-4">
+                            <label className="block text-xs font-mono text-stone-500 uppercase tracking-widest mb-1.5">Summary</label>
+                            <Markdown>{aiOverView}</Markdown>
+                        </div>
+
+
+                        <button
+                            onClick={() => { setShowAIModal(false) }}
+                            className="w-full bg-[#1c1917] hover:bg-stone-800 active:scale-95 transition-all text-white font-semibold rounded-2xl py-3.5 text-sm font-mono uppercase tracking-widest"
+                        >
+                            Close
+                        </button>
                     </div>
                 </div>
             )}
