@@ -30,18 +30,21 @@ function formatRelativeDate(date) {
 export default function ExpenseTracker({onLogout}) {
     useEffect(()=>{
         listExpenses()
+        userDetailetch()
     }, [])
 
 
     const expenseListApi = () => API.get("api/expense/list/")
     const expenseAddApi = (data) => API.post("api/expense/create/", data)
     const expenseDeleteApi = (data) => API.post("api/expense/delete/", data)
+    const userDetailApi = () => API.get("api/user-details/")
 
     const [expenses, setExpenses] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState({ note: "", amount: "", category: "FOOD" });
     const [formError, setFormError] = useState("");
     const [deleteId, setDeleteId] = useState(null);
+    const [user, setUser] = useState(null);
 
     const today = new Date();
     const todayStr = today.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -67,6 +70,11 @@ export default function ExpenseTracker({onLogout}) {
     const listExpenses = async () => {
         const res = await expenseListApi()
         setExpenses(res?.data)
+    }
+
+    const userDetailetch = async () => {
+        const res = await userDetailApi()
+        setUser(res?.data)
     }
 
     const handleAdd = async () => {
@@ -108,6 +116,10 @@ export default function ExpenseTracker({onLogout}) {
 
             <div className="relative max-w-md mx-auto px-4 pt-10 pb-24">
 
+                <p className="text-center text-xs tracking-widest uppercase text-stone-400 mb-6 font-mono"
+                    style={{ fontFamily: "monospace", letterSpacing: "0.2em" }}>
+                    Hello {user?.name}!
+                </p>
                 {/* Date */}
                 <p className="text-center text-xs tracking-widest uppercase text-stone-400 mb-6 font-mono"
                     style={{ fontFamily: "monospace", letterSpacing: "0.2em" }}>

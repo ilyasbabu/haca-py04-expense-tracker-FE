@@ -22,33 +22,41 @@ export default function Login({ onLogin }) {
     };
 
     const login = (data) => axios.post("http://127.0.0.1:8000/api/token/", data)
+    const signup = (data) => axios.post("http://127.0.0.1:8000/api/signup/", data)
 
     const handleSubmit = async () => {
         const e = validate();
         if (Object.keys(e).length) { setErrors(e); return; }
         setErrors({});
         setLoading(true);
-        console.log(form.username)
-        console.log(form.password)
-        try {
-            const res = await login({username: form.username, password: form.password})
-            console.log(res.data);
-            localStorage.setItem("access", res.data.access)
-            localStorage.setItem("refresh", res.data.refresh)
-            onLogin()
-            
-        } catch (error) {
-            if (error?.response?.status == 401){
-                setErrors({"login":error.response.data.detail})
-            }else{
-                setErrors({"login":"Server not reachable"})
+        if (tab == "login"){
+            try {
+                const res = await login({username: form.username, password: form.password})
+                localStorage.setItem("access", res.data.access)
+                localStorage.setItem("refresh", res.data.refresh)
+                onLogin()
+            } catch (error) {
+                if (error?.response?.status == 401){
+                    setErrors({"login":error.response.data.detail})
+                }else{
+                    setErrors({"login":"Server not reachable"})
+                }
+            }
+        }else{
+            try{
+                const res = await signup({...form})
+                setErrors({"login":"Signup Successfull, Login to continue!"});
+                setForm({ name: "", username:"", email: "", password: "" });
+                setTab("login")
+            }catch (error) {
+                if (error?.response?.status == 401){
+                    setErrors({"login":error.response.data.detail})
+                }else{
+                    setErrors({"login":"Server not reachable"})
+                }
             }
         }
         setLoading(false);
-        // setTimeout(() => {
-        //     setLoading(false);
-        //     if (onLogin) onLogin({ name: form.name || form.email.split("@")[0], email: form.email });
-        // }, 1400);
     };
 
     const handleChange = (field) => (ev) => {
